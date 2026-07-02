@@ -1,19 +1,26 @@
-# Dropdesk
+# DropDesk
 
-A polished file drop-off portal prototype. Visitors can add their contact details, drag in files, leave a note, and receive an on-screen delivery receipt. The admin view organizes submissions with search, status filters, storage totals, and file downloads.
+A private client file-delivery portal backed by Supabase.
 
-## Run locally
+## Features
 
-Serve this folder with any static web server, for example:
+- Multiple file uploads to a private Supabase Storage bucket
+- Submission metadata stored in Supabase Postgres
+- Administrator login through Supabase Auth
+- Searchable submission dashboard
+- Private, time-limited file download links
+- New/reviewed status tracking
+- Responsive desktop and mobile design
 
-```bash
-python3 -m http.server 4173
-```
+## Deploy
 
-Then visit `http://localhost:4173`.
+This is a static site. Upload `index.html`, `styles.css`, and `app.js` to the root of a GitHub repository, then deploy with GitHub Pages or Render.
 
-## Prototype storage
+For Render, use:
 
-This first version stores submission metadata in `localStorage` and file contents in IndexedDB. That makes the complete experience testable without accounts or infrastructure, but data is limited to the browser and device where it was uploaded.
+- Build command: `echo "No build needed"`
+- Publish directory: `.`
 
-For a public launch, connect the form to a backend and cloud object storage (for example Supabase Storage, Amazon S3, or Cloudflare R2), then protect the admin view with authentication. The current UI and workflow can remain in place.
+## Supabase
+
+The publishable key in `app.js` is intentionally safe for browser use. Access is protected by the Row Level Security policies already configured in the Supabase project. Never add the database password, secret key, or `service_role` key to this repository.

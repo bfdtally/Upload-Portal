@@ -1,25 +1,57 @@
-const MAX_FILE_SIZE = 250 * 1024 * 1024;
-const DB_NAME = "dropdesk-files";
-const STORE_NAME = "submissions";
+const PROJECT_URL = "https://qgaanudqzldzjdmaskhu.supabase.co";
+const PUBLISHABLE_KEY = "sb_publishable_0ZbjxqmRXbcqVhnzLgA7Mg_T7s8_Nwe";
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
+const MAX_TOTAL_SIZE = 200 * 1024 * 1024;
 
+const database = window.supabase.createClient(PROJECT_URL, PUBLISHABLE_KEY);
 const $ = (selector) => document.querySelector(selector);
-const state = { files: [], submissions: JSON.parse(localStorage.getItem("dropdesk-submissions") || "[]") };
+const state = { files: [], submissions: [] };
+const views = {
+  upload: $("#uploadView"),
+  success: $("#successView"),
+  login: $("#adminLoginView"),
+  admin: $("#adminView"),
+};
 
-const views = { upload: $("#uploadView"), success: $("#successView"), admin: $("#adminView") };
-const showView = (name) => {
+function showView(name) {
   Object.entries(views).forEach(([key, element]) => { element.hidden = key !== name; });
   window.scrollTo({ top: 0, behavior: "smooth" });
-};
+}
 
-const formatBytes = (bytes) => {
-  if (!bytes) return "0 MB";
+function formatBytes(bytes) {
+  if (!bytes) return "0 B";
   const units = ["B", "KB", "MB", "GB"];
-  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), 3);
-  return `${(bytes / 1024 ** i).toFixed(i > 1 ? 1 : 0)} ${units[i]}`;
-};
-const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c]));
+  const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), 3);
+  return `${(bytes / 1024 ** index).toFixed(index > 1 ? 1 : 0)} ${units[index]}`;
+}
+
+const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (character) => ({
+  "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;",
+}[character]));
+
+const createId = () => crypto.randomUUID?.() || `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
+const safeName = (name) => name.replace(/[^a-zA-Z0-9._-]/g, "_");
 const fileExt = (name) => (name.split(".").pop() || "FILE").slice(0, 4).toUpperCase();
-const toast = (message) => { const el = $("#toast"); el.textContent = message; el.classList.add("show"); setTimeout(() => el.classList.remove("show"), 2400); };
+
+function toast(message) {
+  const element = $("#toast");
+  element.textContent = message;
+  element.classList.add("show");
+  setTimeout(() => element.classList.remove("show"), 2600);
+}
+
+function showNotice(selector, message, error = false) {
+  const element = $(selector);
+  element.textContent = message;
+  element.classList.toggle("error", error);
+  element.hidden = false;
+}
+
+function clearNotice(selector) {
+  const element = $(selector);
+  element.hidden = true;
+  element.textContent = "";
+}
 
 function renderFiles() {
   $("#fileList").innerHTML = state.files.map((file, index) => `
@@ -30,111 +62,216 @@ function renderFiles() {
     </div>`).join("");
 }
 
-function addFiles(files) {
-  const incoming = [...files];
-  const oversized = incoming.filter((file) => file.size > MAX_FILE_SIZE);
-  if (oversized.length) toast(`${oversized.length} file${oversized.length > 1 ? "s are" : " is"} over the 250 MB limit`);
-  incoming.filter((file) => file.size <= MAX_FILE_SIZE).forEach((file) => {
-    if (!state.files.some((existing) => existing.name === file.name && existing.size === file.size)) state.files.push(file);
-  });
+function addFiles(fileList) {
+  clearNotice("#uploadNotice");
+  const incoming = [...fileList];
+  if (incoming.some((file) => file.size > MAX_FILE_SIZE)) {
+    showNotice("#uploadNotice", "Each file must be 50 MB or smaller.", true);
+    return;
+  }
+  const combined = [...state.files, ...incoming].filter((file, index, all) =>
+    index === all.findIndex((item) => item.name === file.name && item.size === file.size));
+  if (combined.length > 10) {
+    showNotice("#uploadNotice", "You can upload no more than 10 files at once.", true);
+    return;
+  }
+  if (combined.reduce((total, file) => total + file.size, 0) > MAX_TOTAL_SIZE) {
+    showNotice("#uploadNotice", "The combined upload must be 200 MB or smaller.", true);
+    return;
+  }
+  state.files = combined;
   renderFiles();
 }
 
-const openDb = () => new Promise((resolve, reject) => {
-  const request = indexedDB.open(DB_NAME, 1);
-  request.onupgradeneeded = () => request.result.createObjectStore(STORE_NAME, { keyPath: "id" });
-  request.onsuccess = () => resolve(request.result);
-  request.onerror = () => reject(request.error);
+$("#dropZone").addEventListener("click", () => $("#fileInput").click());
+$("#dropZone").addEventListener("keydown", (event) => {
+  if (["Enter", " "].includes(event.key)) { event.preventDefault(); $("#fileInput").click(); }
+});
+$("#fileInput").addEventListener("change", (event) => { addFiles(event.target.files); event.target.value = ""; });
+["dragenter", "dragover"].forEach((type) => $("#dropZone").addEventListener(type, (event) => {
+  event.preventDefault(); $("#dropZone").classList.add("dragging");
+}));
+["dragleave", "drop"].forEach((type) => $("#dropZone").addEventListener(type, (event) => {
+  event.preventDefault(); $("#dropZone").classList.remove("dragging");
+}));
+$("#dropZone").addEventListener("drop", (event) => addFiles(event.dataTransfer.files));
+$("#fileList").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-index]");
+  if (!button) return;
+  state.files.splice(Number(button.dataset.index), 1);
+  renderFiles();
+});
+$("#message").addEventListener("input", (event) => { $("#charCount").textContent = event.target.value.length; });
+
+$("#uploadForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  clearNotice("#uploadNotice");
+  if (!state.files.length) return showNotice("#uploadNotice", "Add at least one file to continue.", true);
+
+  const button = $("#submitButton");
+  const submissionId = createId();
+  const uploadedFiles = [];
+  button.disabled = true;
+
+  try {
+    for (let index = 0; index < state.files.length; index += 1) {
+      const file = state.files[index];
+      button.firstChild.textContent = `Uploading ${index + 1} of ${state.files.length}… `;
+      const path = `submissions/${submissionId}/${createId()}-${safeName(file.name)}`;
+      const result = await database.storage.from("client-uploads").upload(path, file, {
+        contentType: file.type || "application/octet-stream",
+        upsert: false,
+      });
+      if (result.error) throw result.error;
+      uploadedFiles.push({ name: file.name, path, size: file.size, type: file.type || "application/octet-stream" });
+    }
+
+    button.firstChild.textContent = "Saving submission… ";
+    const submission = {
+      id: submissionId,
+      full_name: $("#fullName").value.trim(),
+      email: $("#email").value.trim(),
+      message: $("#message").value.trim(),
+      files: uploadedFiles,
+      status: "new",
+    };
+    const result = await database.from("submissions").insert(submission);
+    if (result.error) throw result.error;
+
+    $("#successName").textContent = submission.full_name.split(" ")[0];
+    $("#successEmail").textContent = submission.email;
+    $("#receipt").innerHTML = uploadedFiles.map((file) => `
+      <div class="receipt-row"><svg viewBox="0 0 18 18"><path d="M5 2h5l4 4v10H5zM10 2v4h4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg><span>${escapeHtml(file.name)}</span><small>${formatBytes(file.size)}</small></div>`).join("");
+    state.files = [];
+    renderFiles();
+    event.target.reset();
+    $("#charCount").textContent = "0";
+    showView("success");
+  } catch (error) {
+    showNotice("#uploadNotice", error.message || "The upload failed. Please try again.", true);
+  } finally {
+    button.disabled = false;
+    button.firstChild.textContent = "Send files securely ";
+  }
 });
 
-async function storeSubmission(submission) {
-  try {
-    const db = await openDb();
-    await new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, "readwrite");
-      tx.objectStore(STORE_NAME).put({ id: submission.id, files: state.files });
-      tx.oncomplete = resolve;
-      tx.onerror = () => reject(tx.error);
-    });
-  } catch (error) {
-    console.warn("Could not save file blobs; metadata is still available.", error);
+$("#sendMore").addEventListener("click", () => showView("upload"));
+$("#loginBack").addEventListener("click", () => showView("upload"));
+$("#backToPortal").addEventListener("click", () => showView("upload"));
+
+$("#adminLink").addEventListener("click", async () => {
+  const { data } = await database.auth.getSession();
+  if (data.session) {
+    showView("admin");
+    loadDashboard();
+  } else {
+    showView("login");
   }
+});
+
+$("#adminLoginForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  clearNotice("#loginNotice");
+  const button = $("#loginButton");
+  button.disabled = true;
+  button.textContent = "Signing in…";
+  const result = await database.auth.signInWithPassword({
+    email: $("#adminEmail").value.trim(),
+    password: $("#adminPassword").value,
+  });
+  button.disabled = false;
+  button.textContent = "Sign in securely";
+  if (result.error) return showNotice("#loginNotice", "Incorrect email or password.", true);
+  $("#adminPassword").value = "";
+  showView("admin");
+  loadDashboard();
+});
+
+$("#logoutButton").addEventListener("click", async () => {
+  await database.auth.signOut();
+  state.submissions = [];
+  showView("upload");
+});
+$("#refreshAdmin").addEventListener("click", loadDashboard);
+$("#searchInput").addEventListener("input", renderDashboard);
+$("#statusFilter").addEventListener("change", renderDashboard);
+
+async function loadDashboard() {
+  clearNotice("#adminNotice");
+  $("#submissionList").innerHTML = '<div class="empty-state">Loading submissions…</div>';
+  const result = await database.from("submissions").select("*").order("created_at", { ascending: false });
+  if (result.error) {
+    showNotice("#adminNotice", result.error.message, true);
+    $("#submissionList").innerHTML = '<div class="empty-state">Unable to load submissions.</div>';
+    return;
+  }
+  state.submissions = result.data || [];
+  renderDashboard();
 }
 
-async function downloadSubmission(id) {
-  try {
-    const db = await openDb();
-    const data = await new Promise((resolve, reject) => {
-      const request = db.transaction(STORE_NAME).objectStore(STORE_NAME).get(id);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-    if (!data?.files?.length) return toast("Files are not available in this browser");
-    data.files.forEach((file, i) => setTimeout(() => {
-      const url = URL.createObjectURL(file);
-      const anchor = Object.assign(document.createElement("a"), { href: url, download: file.name });
-      anchor.click();
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-    }, i * 250));
-    toast(`Downloading ${data.files.length} file${data.files.length > 1 ? "s" : ""}`);
-  } catch { toast("Files are not available in this browser"); }
+function filesOf(submission) {
+  if (Array.isArray(submission.files)) return submission.files;
+  try { return JSON.parse(submission.files || "[]"); } catch { return []; }
 }
 
 function renderDashboard() {
   const query = $("#searchInput").value.toLowerCase().trim();
   const filter = $("#statusFilter").value;
   const filtered = state.submissions.filter((item) => {
-    const haystack = `${item.name} ${item.email} ${item.files.map((file) => file.name).join(" ")}`.toLowerCase();
+    const files = filesOf(item);
+    const haystack = `${item.full_name} ${item.email} ${files.map((file) => file.name).join(" ")}`.toLowerCase();
     return (!query || haystack.includes(query)) && (filter === "all" || item.status === filter);
   });
+
+  const allFiles = state.submissions.flatMap(filesOf);
   $("#totalSubmissions").textContent = state.submissions.length;
-  $("#totalFiles").textContent = state.submissions.reduce((sum, item) => sum + item.files.length, 0);
-  $("#storageUsed").textContent = formatBytes(state.submissions.reduce((sum, item) => sum + item.files.reduce((n, file) => n + file.size, 0), 0));
-  $("#submissionList").innerHTML = filtered.length ? filtered.map((item) => {
-    const initials = item.name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
-    const names = item.files.map((file) => file.name).join(", ");
+  $("#totalFiles").textContent = allFiles.length;
+  $("#storageUsed").textContent = formatBytes(allFiles.reduce((total, file) => total + Number(file.size || 0), 0));
+
+  if (!filtered.length) {
+    $("#submissionList").innerHTML = `<div class="empty-state"><strong>${state.submissions.length ? "No matching submissions" : "Your drop-off desk is ready"}</strong><span>${state.submissions.length ? "Try another search or filter." : "New uploads will appear here automatically."}</span></div>`;
+    return;
+  }
+
+  $("#submissionList").innerHTML = filtered.map((item) => {
+    const files = filesOf(item);
+    const initials = item.full_name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+    const fileButtons = files.map((file, index) => `<button class="download-file" type="button" data-download-id="${item.id}" data-file-index="${index}">↓ ${escapeHtml(file.name)}</button>`).join(" ");
     return `<article class="submission-row">
       <span class="avatar">${escapeHtml(initials)}</span>
-      <span class="person"><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.email)}</small></span>
-      <span class="submission-files"><strong title="${escapeHtml(names)}">${escapeHtml(names)}</strong><small>${item.files.length} file${item.files.length > 1 ? "s" : ""} · ${formatBytes(item.files.reduce((sum, file) => sum + file.size, 0))}</small></span>
-      <span class="date-cell">${new Date(item.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</span>
-      <span><button class="status-btn ${item.status}" data-status-id="${item.id}">${item.status}</button><button class="download-btn" data-download-id="${item.id}" aria-label="Download files"><svg viewBox="0 0 20 20"><path d="M10 3v10m0 0 4-4m-4 4L6 9M3 17h14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button></span>
+      <span class="person"><strong>${escapeHtml(item.full_name)}</strong><small>${escapeHtml(item.email)}</small><span class="submission-note">${escapeHtml(item.message || "No note")}</span></span>
+      <span class="submission-files"><strong>${files.length} file${files.length === 1 ? "" : "s"} · ${formatBytes(files.reduce((total, file) => total + Number(file.size || 0), 0))}</strong><small>${fileButtons}</small></span>
+      <span class="date-cell">${new Date(item.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</span>
+      <button class="status-btn ${escapeHtml(item.status)}" type="button" data-status-id="${item.id}">${escapeHtml(item.status)}</button>
     </article>`;
-  }).join("") : `<div class="empty-state"><strong>${state.submissions.length ? "No matching submissions" : "Your drop-off desk is ready"}</strong><span>${state.submissions.length ? "Try a different search or filter." : "New uploads will appear here automatically."}</span></div>`;
+  }).join("");
 }
 
-$("#dropZone").addEventListener("click", () => $("#fileInput").click());
-$("#dropZone").addEventListener("keydown", (event) => { if (["Enter", " "].includes(event.key)) { event.preventDefault(); $("#fileInput").click(); } });
-$("#fileInput").addEventListener("change", (event) => { addFiles(event.target.files); event.target.value = ""; });
-["dragenter", "dragover"].forEach((type) => $("#dropZone").addEventListener(type, (event) => { event.preventDefault(); $("#dropZone").classList.add("dragging"); }));
-["dragleave", "drop"].forEach((type) => $("#dropZone").addEventListener(type, (event) => { event.preventDefault(); $("#dropZone").classList.remove("dragging"); }));
-$("#dropZone").addEventListener("drop", (event) => addFiles(event.dataTransfer.files));
-$("#fileList").addEventListener("click", (event) => { const button = event.target.closest("[data-index]"); if (button) { state.files.splice(Number(button.dataset.index), 1); renderFiles(); } });
-$("#message").addEventListener("input", (event) => $("#charCount").textContent = event.target.value.length);
+$("#submissionList").addEventListener("click", async (event) => {
+  const downloadButton = event.target.closest("[data-download-id]");
+  if (downloadButton) {
+    const popup = window.open("", "_blank");
+    const submission = state.submissions.find((item) => item.id === downloadButton.dataset.downloadId);
+    const file = submission && filesOf(submission)[Number(downloadButton.dataset.fileIndex)];
+    if (!file) { popup?.close(); return; }
+    const result = await database.storage.from("client-uploads").createSignedUrl(file.path, 120);
+    if (result.error) {
+      popup?.close();
+      showNotice("#adminNotice", result.error.message, true);
+    } else if (popup) {
+      popup.location = result.data.signedUrl;
+    } else {
+      window.location.href = result.data.signedUrl;
+    }
+    return;
+  }
 
-$("#uploadForm").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  if (!state.files.length) return toast("Add at least one file to continue");
-  const button = $("#submitButton"); button.disabled = true; button.firstChild.textContent = "Saving files... ";
-  const submission = {
-    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-    name: $("#fullName").value.trim(), email: $("#email").value.trim(), message: $("#message").value.trim(), status: "new", createdAt: new Date().toISOString(),
-    files: state.files.map(({ name, size, type }) => ({ name, size, type }))
-  };
-  await storeSubmission(submission);
-  state.submissions.unshift(submission);
-  localStorage.setItem("dropdesk-submissions", JSON.stringify(state.submissions));
-  $("#successName").textContent = submission.name.split(" ")[0]; $("#successEmail").textContent = submission.email;
-  $("#receipt").innerHTML = submission.files.map((file) => `<div class="receipt-row"><svg viewBox="0 0 18 18"><path d="M5 2h5l4 4v10H5zM10 2v4h4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg><span>${escapeHtml(file.name)}</span><small>${formatBytes(file.size)}</small></div>`).join("");
-  state.files = []; renderFiles(); event.target.reset(); $("#charCount").textContent = "0"; button.disabled = false; button.firstChild.textContent = "Send files securely "; showView("success");
-});
-
-$("#sendMore").addEventListener("click", () => showView("upload"));
-$("#adminLink").addEventListener("click", () => { renderDashboard(); showView("admin"); });
-$("#backToPortal").addEventListener("click", () => showView("upload"));
-$("#searchInput").addEventListener("input", renderDashboard); $("#statusFilter").addEventListener("change", renderDashboard);
-$("#submissionList").addEventListener("click", (event) => {
   const statusButton = event.target.closest("[data-status-id]");
-  if (statusButton) { const item = state.submissions.find((entry) => entry.id === statusButton.dataset.statusId); item.status = item.status === "new" ? "reviewed" : "new"; localStorage.setItem("dropdesk-submissions", JSON.stringify(state.submissions)); renderDashboard(); }
-  const downloadButton = event.target.closest("[data-download-id]"); if (downloadButton) downloadSubmission(downloadButton.dataset.downloadId);
+  if (!statusButton) return;
+  const submission = state.submissions.find((item) => item.id === statusButton.dataset.statusId);
+  const status = submission.status === "new" ? "reviewed" : "new";
+  const result = await database.from("submissions").update({ status }).eq("id", submission.id);
+  if (result.error) return showNotice("#adminNotice", result.error.message, true);
+  submission.status = status;
+  renderDashboard();
 });
