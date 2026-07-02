@@ -1,0 +1,92 @@
+<div id="dd-app">
+<style>
+#dd-app,#dd-app *{box-sizing:border-box}#dd-app{--ink:#173028;--green:#1d664c;--soft:#e7f1e7;--cream:#f6f3eb;--line:#d8dfd9;--muted:#68776f;max-width:1080px;margin:20px auto;padding:28px;border-radius:24px;background:var(--cream);color:var(--ink);font-family:Arial,Helvetica,sans-serif}#dd-app button,#dd-app input,#dd-app textarea{font:inherit}#dd-app .dd-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:35px}#dd-app .dd-brand{display:flex;align-items:center;gap:10px;font-size:19px;font-weight:800}#dd-app .dd-logo{display:grid;width:38px;height:38px;place-items:center;border-radius:11px;background:var(--green);color:#fff;font-size:20px}#dd-app .dd-admin-link{width:auto;padding:9px 13px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--green);font-size:11px;font-weight:bold;cursor:pointer}#dd-app .dd-layout{display:grid;grid-template-columns:.86fr 1.14fr;gap:65px;align-items:center;padding:10px 20px 35px}#dd-app h1{margin:18px 0;font-size:clamp(44px,6vw,70px);line-height:.98;letter-spacing:-3px}#dd-app h1 span{color:var(--green)}#dd-app .dd-kicker{color:var(--green);font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase}#dd-app .dd-intro{color:var(--muted);font-size:16px;line-height:1.7}#dd-app .dd-trust{margin-top:25px;color:#52645c;font-size:11px;font-weight:bold}#dd-app .dd-card{padding:30px;border:1px solid #e0e3de;border-radius:18px;background:#fff;box-shadow:0 22px 55px rgba(23,48,40,.12)}#dd-app label{display:block;margin-bottom:17px;color:#3f564c;font-size:11px;font-weight:bold}#dd-app input,#dd-app textarea{display:block;width:100%;margin-top:7px;padding:12px 13px;border:1px solid var(--line);border-radius:9px;outline:none;background:#fff;color:var(--ink)}#dd-app input:focus,#dd-app textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(29,102,76,.11)}#dd-app textarea{min-height:85px;resize:vertical}#dd-app .dd-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}#dd-app .dd-filebox{padding:25px 15px;border:2px dashed #a8bdb0;border-radius:11px;background:#f8fbf7;text-align:center}#dd-app .dd-filebox strong{display:block;color:var(--green);font-size:14px}#dd-app .dd-filebox small,#dd-app .dd-file-summary{display:block;margin-top:6px;color:#7a8881;font-size:9px}#dd-app .dd-file-summary{color:var(--green);font-size:10px;font-weight:bold}#dd-app .dd-primary{width:100%;padding:14px;border:0;border-radius:9px;background:var(--green);color:#fff;font-size:13px;font-weight:bold;cursor:pointer}#dd-app .dd-primary:hover{background:#124c37}#dd-app button:disabled{opacity:.6;cursor:wait}#dd-app .dd-note{margin:9px 0 0;text-align:center;color:#8c9691;font-size:9px}#dd-app .dd-notice{display:none;margin-bottom:15px;padding:11px;border-radius:8px;font-size:11px}#dd-app .dd-error{background:#fae7e4;color:#8a302a}#dd-app .dd-progress{background:#e7f2e8;color:var(--green)}#dd-app .dd-center{max-width:650px;margin:35px auto;padding:50px 30px;text-align:center}#dd-app .dd-check{display:grid;width:70px;height:70px;margin:0 auto 20px;place-items:center;border-radius:50%;background:#dceeb8;color:var(--green);font-size:37px;font-weight:bold}#dd-app .dd-center h2{margin:0 0 10px;font-size:34px}#dd-app .dd-secondary{width:auto;padding:10px 16px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);font-size:11px;font-weight:bold;cursor:pointer}#dd-app .dd-login{max-width:440px;margin:35px auto}#dd-app .dd-login h2{margin:0 0 8px;font-size:30px}#dd-app .dd-login>p{margin:0 0 25px;color:var(--muted);font-size:13px}#dd-app .dd-admin-head{display:flex;align-items:end;justify-content:space-between;gap:20px;margin:10px 5px 25px}#dd-app .dd-admin-head h2{margin:6px 0 3px;font-size:38px}#dd-app .dd-admin-head p{margin:0;color:var(--muted);font-size:13px}#dd-app .dd-actions{display:flex;gap:8px}#dd-app .dd-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:15px}#dd-app .dd-stat{padding:18px;border:1px solid var(--line);border-radius:12px;background:#fff}#dd-app .dd-stat span,#dd-app .dd-stat small{display:block;color:var(--muted);font-size:10px}#dd-app .dd-stat strong{display:block;margin:7px 0 2px;font-size:25px}#dd-app .dd-toolbar{display:flex;gap:10px;padding:14px;border-bottom:1px solid var(--line)}#dd-app .dd-toolbar input{margin:0}#dd-app .dd-list{overflow:hidden;border:1px solid var(--line);border-radius:13px;background:#fff}#dd-app .dd-submission{padding:18px;border-bottom:1px solid #e9ece8}#dd-app .dd-submission:last-child{border:0}#dd-app .dd-sub-top{display:flex;align-items:start;justify-content:space-between;gap:15px}#dd-app .dd-person strong{display:block;font-size:13px}#dd-app .dd-person a{color:var(--green);font-size:10px}#dd-app .dd-date{color:var(--muted);font-size:10px}#dd-app .dd-message{margin:11px 0;padding:10px;border-radius:8px;background:#f7f8f5;color:#53625b;font-size:11px}#dd-app .dd-files{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}#dd-app .dd-download{width:auto;padding:8px 10px;border:1px solid #cdd9d1;border-radius:7px;background:#f5faf5;color:var(--green);font-size:10px;font-weight:bold;cursor:pointer}#dd-app .dd-status{width:auto;padding:6px 9px;border:0;border-radius:20px;background:#e7f2e8;color:var(--green);font-size:9px;font-weight:bold;text-transform:uppercase;cursor:pointer}#dd-app .dd-status.reviewed{background:#eceeeb;color:#6f7a74}#dd-app .dd-empty{padding:50px 20px;text-align:center;color:var(--muted);font-size:12px}#dd-app [hidden]{display:none!important}@media(max-width:780px){#dd-app .dd-layout{grid-template-columns:1fr;gap:35px;padding:5px}#dd-app .dd-copy{text-align:center}#dd-app .dd-stats{grid-template-columns:1fr}#dd-app .dd-admin-head{align-items:start;flex-direction:column}#dd-app .dd-actions{width:100%}#dd-app .dd-actions button{flex:1}}@media(max-width:520px){#dd-app{padding:18px 12px;border-radius:16px}#dd-app .dd-grid{grid-template-columns:1fr}#dd-app .dd-card{padding:22px 17px}#dd-app h1{letter-spacing:-2px}#dd-app .dd-header{margin-bottom:25px}#dd-app .dd-sub-top{flex-direction:column}#dd-app .dd-toolbar{flex-direction:column}}
+</style>
+
+<header class="dd-header">
+  <div class="dd-brand"><span class="dd-logo">⇩</span> DropDesk</div>
+  <button class="dd-admin-link" id="dd-admin-open" type="button">🔒 Admin view</button>
+</header>
+
+<section id="dd-upload-view">
+  <div class="dd-layout">
+    <div class="dd-copy">
+      <div class="dd-kicker">● Secure file delivery</div>
+      <h1>Send it over.<br><span>Skip the inbox.</span></h1>
+      <p class="dd-intro">Upload your files securely—no email attachments required.</p>
+      <div class="dd-trust">✓ Private storage &nbsp;&nbsp; ✓ Up to 10 files</div>
+    </div>
+    <form class="dd-card" id="dd-upload-form">
+      <div class="dd-notice dd-error" id="dd-upload-error"></div>
+      <div class="dd-notice dd-progress" id="dd-upload-progress"></div>
+      <div class="dd-grid">
+        <label>Full name<input id="dd-name" type="text" placeholder="Jane Smith" required></label>
+        <label>Email address<input id="dd-email" type="email" placeholder="jane@company.com" required></label>
+      </div>
+      <label class="dd-filebox"><strong>Select your files</strong><small>Maximum 10 files and 50 MB per file</small><input id="dd-file-input" type="file" multiple required><span class="dd-file-summary" id="dd-file-summary">No files selected</span></label>
+      <label>Message (optional)<textarea id="dd-message" maxlength="1000" placeholder="Anything we should know about these files?"></textarea></label>
+      <button class="dd-primary" id="dd-upload-button" type="submit">Send files securely</button>
+      <p class="dd-note">Files are stored privately and cannot be viewed by other visitors.</p>
+    </form>
+  </div>
+</section>
+
+<section class="dd-center" id="dd-success-view" hidden>
+  <div class="dd-check">✓</div><h2>Your files were received!</h2><p>Everything arrived successfully. Thank you!</p><button class="dd-secondary" id="dd-send-more" type="button">Send more files</button>
+</section>
+
+<section class="dd-login dd-card" id="dd-login-view" hidden>
+  <div class="dd-kicker">Private workspace</div><h2>Admin sign in</h2><p>Use the administrator account you created in Supabase.</p>
+  <form id="dd-login-form">
+    <div class="dd-notice dd-error" id="dd-login-error"></div>
+    <label>Email address<input id="dd-admin-email" type="email" autocomplete="username" required></label>
+    <label>Password<input id="dd-admin-password" type="password" autocomplete="current-password" required></label>
+    <button class="dd-primary" id="dd-login-button" type="submit">Sign in securely</button>
+  </form>
+  <button class="dd-secondary" id="dd-login-back" type="button" style="margin-top:10px">Back to upload form</button>
+</section>
+
+<section id="dd-admin-view" hidden>
+  <div class="dd-admin-head"><div><div class="dd-kicker">Private workspace</div><h2>Submissions</h2><p>Everything sent to you, organized in one place.</p></div><div class="dd-actions"><button class="dd-secondary" id="dd-refresh" type="button">Refresh</button><button class="dd-secondary" id="dd-logout" type="button">Log out</button></div></div>
+  <div class="dd-notice dd-error" id="dd-admin-error"></div>
+  <div class="dd-stats"><div class="dd-stat"><span>Total submissions</span><strong id="dd-total">0</strong><small>All time</small></div><div class="dd-stat"><span>Files received</span><strong id="dd-file-total">0</strong><small>Private storage</small></div><div class="dd-stat"><span>New</span><strong id="dd-new-total">0</strong><small>Awaiting review</small></div></div>
+  <div class="dd-list"><div class="dd-toolbar"><input id="dd-search" type="search" placeholder="Search by name, email or filename..."></div><div id="dd-submission-list"><div class="dd-empty">Loading submissions…</div></div></div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+  var URL="https://qgaanudqzldzjdmaskhu.supabase.co";
+  var KEY="sb_publishable_0ZbjxqmRXbcqVhnzLgA7Mg_T7s8_Nwe";
+  var db=window.supabase.createClient(URL,KEY);
+  var records=[];
+  function el(id){return document.getElementById(id)}
+  function show(id){["dd-upload-view","dd-success-view","dd-login-view","dd-admin-view"].forEach(function(x){el(x).hidden=x!==id});window.scrollTo({top:0,behavior:"smooth"})}
+  function notice(id,msg){el(id).textContent=msg;el(id).style.display="block"}
+  function clear(id){el(id).style.display="none";el(id).textContent=""}
+  function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+  function bytes(n){if(!n)return"0 B";if(n<1048576)return Math.ceil(n/1024)+" KB";return(n/1048576).toFixed(1)+" MB"}
+  function uid(){return crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2)}
+  function safe(n){return n.replace(/[^a-zA-Z0-9._-]/g,"_")}
+
+  el("dd-file-input").addEventListener("change",function(){clear("dd-upload-error");var fs=Array.from(this.files),total=fs.reduce(function(s,f){return s+f.size},0);if(fs.length>10||fs.some(function(f){return f.size>52428800})||total>209715200){this.value="";el("dd-file-summary").textContent="No files selected";return notice("dd-upload-error","Use no more than 10 files, 50 MB each and 200 MB total.")}el("dd-file-summary").textContent=fs.length?fs.length+" file"+(fs.length===1?"":"s")+" selected · "+bytes(total):"No files selected"});
+
+  el("dd-upload-form").addEventListener("submit",async function(e){e.preventDefault();clear("dd-upload-error");var fs=Array.from(el("dd-file-input").files);if(!fs.length)return notice("dd-upload-error","Please select at least one file.");var btn=el("dd-upload-button"),id=uid(),saved=[];btn.disabled=true;btn.textContent="Uploading files…";try{for(var i=0;i<fs.length;i++){notice("dd-upload-progress","Uploading file "+(i+1)+" of "+fs.length+"…");var f=fs[i],path="submissions/"+id+"/"+uid()+"-"+safe(f.name),up=await db.storage.from("client-uploads").upload(path,f,{contentType:f.type||"application/octet-stream",upsert:false});if(up.error)throw up.error;saved.push({name:f.name,path:path,size:f.size,type:f.type||"application/octet-stream"})}notice("dd-upload-progress","Saving your submission…");var ins=await db.from("submissions").insert({id:id,full_name:el("dd-name").value.trim(),email:el("dd-email").value.trim(),message:el("dd-message").value.trim(),files:saved,status:"new"});if(ins.error)throw ins.error;this.reset();el("dd-file-summary").textContent="No files selected";clear("dd-upload-progress");show("dd-success-view")}catch(err){notice("dd-upload-error",err.message||"Upload failed. Please try again.");clear("dd-upload-progress")}finally{btn.disabled=false;btn.textContent="Send files securely"}});
+
+  el("dd-send-more").onclick=function(){show("dd-upload-view")};
+  el("dd-login-back").onclick=function(){show("dd-upload-view")};
+  el("dd-admin-open").onclick=async function(){var s=await db.auth.getSession();if(s.data.session){show("dd-admin-view");loadAdmin()}else show("dd-login-view")};
+  el("dd-login-form").addEventListener("submit",async function(e){e.preventDefault();clear("dd-login-error");var b=el("dd-login-button");b.disabled=true;b.textContent="Signing in…";var r=await db.auth.signInWithPassword({email:el("dd-admin-email").value.trim(),password:el("dd-admin-password").value});b.disabled=false;b.textContent="Sign in securely";if(r.error)return notice("dd-login-error","Incorrect email or password.");el("dd-admin-password").value="";show("dd-admin-view");loadAdmin()});
+  el("dd-logout").onclick=async function(){await db.auth.signOut();records=[];show("dd-upload-view")};
+  el("dd-refresh").onclick=loadAdmin;
+  el("dd-search").addEventListener("input",renderAdmin);
+
+  function showEmpty(message){var list=el("dd-submission-list"),box=document.createElement("div");box.className="dd-empty";box.textContent=message;list.replaceChildren(box)}
+  async function loadAdmin(){clear("dd-admin-error");showEmpty("Loading submissions…");var r=await db.from("submissions").select("*").order("created_at",{ascending:false});if(r.error){notice("dd-admin-error",r.error.message);showEmpty("Unable to load submissions.");return}records=r.data||[];el("dd-total").textContent=records.length;el("dd-file-total").textContent=records.reduce(function(n,x){return n+filesOf(x).length},0);el("dd-new-total").textContent=records.filter(function(x){return x.status==="new"}).length;renderAdmin()}
+  function filesOf(r){if(Array.isArray(r.files))return r.files;try{return JSON.parse(r.files||"[]")}catch(e){return[]}}
+  function renderAdmin(){var q=el("dd-search").value.toLowerCase().trim(),shown=records.filter(function(r){return !q||(r.full_name+" "+r.email+" "+filesOf(r).map(function(f){return f.name}).join(" ")).toLowerCase().indexOf(q)>-1}),list=el("dd-submission-list");if(!shown.length){showEmpty(records.length?"No matching submissions.":"No submissions yet.");return}list.replaceChildren();shown.forEach(function(r){var article=document.createElement("article"),top=document.createElement("div"),person=document.createElement("div"),name=document.createElement("strong"),email=document.createElement("a"),right=document.createElement("div"),date=document.createElement("span"),status=document.createElement("button"),files=document.createElement("div");article.className="dd-submission";top.className="dd-sub-top";person.className="dd-person";name.textContent=r.full_name;email.textContent=r.email;email.href="mailto:"+r.email;date.className="dd-date";date.textContent=new Date(r.created_at).toLocaleString()+" ";status.className="dd-status "+r.status;status.dataset.status=r.id;status.type="button";status.textContent=r.status;files.className="dd-files";person.append(name,email);right.append(date,status);top.append(person,right);article.append(top);if(r.message){var message=document.createElement("div");message.className="dd-message";message.textContent=r.message;article.append(message)}filesOf(r).forEach(function(f,i){var button=document.createElement("button");button.className="dd-download";button.dataset.download=r.id;button.dataset.file=String(i);button.type="button";button.textContent="↓ "+f.name+" · "+bytes(f.size);files.append(button)});article.append(files);list.append(article)})}
+
+  el("dd-submission-list").addEventListener("click",async function(e){var dl=e.target.closest("[data-download]");if(dl){dl.disabled=true;dl.textContent="Preparing…";var rec=records.find(function(x){return x.id===dl.dataset.download}),f=rec&&filesOf(rec)[Number(dl.dataset.file)];if(f){var r=await db.storage.from("client-uploads").createSignedUrl(f.path,120);if(r.error)notice("dd-admin-error",r.error.message);else window.open(r.data.signedUrl,"_blank")}dl.disabled=false;renderAdmin();return}var st=e.target.closest("[data-status]");if(st){var rec2=records.find(function(x){return x.id===st.dataset.status}),next=rec2.status==="new"?"reviewed":"new",u=await db.from("submissions").update({status:next}).eq("id",rec2.id);if(u.error)return notice("dd-admin-error",u.error.message);rec2.status=next;el("dd-new-total").textContent=records.filter(function(x){return x.status==="new"}).length;renderAdmin()}});
+})();
+</script>
+</div>
