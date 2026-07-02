@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="A simple, private file drop-off portal." />
+    <title>Dropdesk — File delivery, without the inbox</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header">
+        <a class="brand" href="#" aria-label="Dropdesk home">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 28 28"><path d="M14 3v14m0 0 5-5m-5 5-5-5M5 20v3h18v-3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span>dropdesk</span>
+        </a>
+        <button class="admin-link" id="adminLink" type="button">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5.5 8V6a4.5 4.5 0 0 1 9 0v2m-10 0h11v9h-11z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          Admin view
+        </button>
+      </header>
+
+      <main>
+        <section id="uploadView" class="upload-view">
+          <div class="hero-copy">
+            <span class="eyebrow"><span class="status-dot"></span> Secure file delivery</span>
+            <h1>Send it over.<br><em>Skip the inbox.</em></h1>
+            <p>Drop your files here and they’ll land exactly where they need to. No email attachments, no size-limit surprises.</p>
+            <div class="trust-row">
+              <span><svg viewBox="0 0 18 18"><path d="M9 2 15 4v4c0 4-2.4 6.5-6 8-3.6-1.5-6-4-6-8V4zM6.3 9l1.7 1.7 3.8-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Private & secure</span>
+              <span><svg viewBox="0 0 18 18"><path d="M9 2v10m0 0 3.5-3.5M9 12 5.5 8.5M3 15h12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Up to 250 MB</span>
+            </div>
+          </div>
+
+          <form class="upload-card" id="uploadForm">
+            <div class="step-label"><span>1</span> YOUR DETAILS</div>
+            <div class="field-grid">
+              <label>Full name <input id="fullName" type="text" placeholder="Jane Smith" required /></label>
+              <label>Email address <input id="email" type="email" placeholder="jane@company.com" required /></label>
+            </div>
+
+            <div class="step-label"><span>2</span> ADD YOUR FILES</div>
+            <div class="drop-zone" id="dropZone" tabindex="0" role="button" aria-label="Choose files to upload">
+              <input id="fileInput" type="file" multiple hidden />
+              <div class="drop-icon">
+                <svg viewBox="0 0 30 30"><path d="M15 20V7m0 0-5 5m5-5 5 5M6 21v3h18v-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <strong>Drop files here or <u>browse</u></strong>
+              <span>PDF, DOC, JPG, PNG, ZIP and more</span>
+              <small>Maximum 250 MB per file</small>
+            </div>
+            <div class="file-list" id="fileList"></div>
+
+            <div class="step-label optional"><span>3</span> A QUICK NOTE <b>OPTIONAL</b></div>
+            <label class="sr-only" for="message">Message</label>
+            <textarea id="message" maxlength="500" placeholder="Anything we should know about these files?"></textarea>
+            <div class="char-count"><span id="charCount">0</span> / 500</div>
+
+            <button class="submit-button" type="submit" id="submitButton">
+              Send files securely
+              <svg viewBox="0 0 20 20"><path d="m4 10 11-6-3 12-3-4-5-2Zm5 2 6-8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <p class="terms">By uploading, you confirm you have permission to share these files.</p>
+          </form>
+        </section>
+
+        <section id="successView" class="success-view" hidden>
+          <div class="success-card">
+            <div class="success-icon"><svg viewBox="0 0 42 42"><path d="m11 22 7 7 14-16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <span class="eyebrow">DELIVERY COMPLETE</span>
+            <h2>Your files are in good hands.</h2>
+            <p>Thanks, <span id="successName">there</span>. Everything arrived safely. A confirmation has been prepared for <strong id="successEmail"></strong>.</p>
+            <div class="receipt" id="receipt"></div>
+            <button class="secondary-button" id="sendMore" type="button">Send more files</button>
+          </div>
+        </section>
+
+        <section id="adminView" class="admin-view" hidden>
+          <div class="admin-heading">
+            <div><span class="eyebrow">PRIVATE WORKSPACE</span><h2>Submissions</h2><p>Everything sent to you, organized in one place.</p></div>
+            <button class="secondary-button" id="backToPortal" type="button">View upload portal</button>
+          </div>
+          <div class="stat-grid">
+            <article><span>Total submissions</span><strong id="totalSubmissions">0</strong><small>All time</small></article>
+            <article><span>Files received</span><strong id="totalFiles">0</strong><small>Ready to review</small></article>
+            <article><span>Storage used</span><strong id="storageUsed">0 MB</strong><small>Local prototype</small></article>
+          </div>
+          <div class="submission-panel">
+            <div class="toolbar">
+              <label class="search-box"><svg viewBox="0 0 20 20"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="m13 13 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><input id="searchInput" type="search" placeholder="Search by name, email or file..." /></label>
+              <select id="statusFilter" aria-label="Filter by status"><option value="all">All submissions</option><option value="new">New</option><option value="reviewed">Reviewed</option></select>
+            </div>
+            <div id="submissionList" class="submission-list"></div>
+          </div>
+        </section>
+      </main>
+
+      <footer><span>© 2026 Dropdesk</span><span>Files stay private. Always.</span></footer>
+    </div>
+    <div class="toast" id="toast" role="status"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
