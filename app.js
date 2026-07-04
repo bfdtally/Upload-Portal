@@ -206,12 +206,37 @@ async function loadDashboard() {
     return;
   }
   state.submissions = result.data || [];
+  await Promise.all(state.submissions.map(prepareDropboxLinks));
   renderDashboard();
 }
 
 function filesOf(submission) {
   if (Array.isArray(submission.files)) return submission.files;
   try { return JSON.parse(submission.files || "[]"); } catch { return []; }
+}
+
+function previewKind(file) {
+  const type = String(file.type || "").toLowerCase();
+  const extension = String(file.name || "").split(".").pop().toLowerCase();
+  if (type.startsWith("image/") || ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "heic"].includes(extension)) return "image";
+  if (type === "application/pdf" || extension === "pdf") return "pdf";
+  if (type.startsWith("video/") || ["mp4", "webm", "mov", "m4v"].includes(extension)) return "video";
+  if (type.startsWith("audio/") || ["mp3", "wav", "m4a", "ogg"].includes(extension)) return "audio";
+  if (type.startsWith("text/") || ["txt", "csv", "json", "md", "log", "xml"].includes(extension)) return "text";
+  return null;
+}
+
+async function prepareDropboxLinks(submission) {
+  const files = filesOf(submission);
+  if (!files.length || submission.status === "archived") {
+    submission.dropboxFiles = [];
+    return;
+  }
+  const links = await Promise.all(files.map(async (file) => {
+    const result = await database.storage.from("client-uploads").createSignedUrl(file.path, 3600);
+    return result.error ? null : { url: result.data.signedUrl, filename: file.name };
+  }));
+  submission.dropboxFiles = links.filter(Boolean);
 }
 
 function renderDashboard() {
@@ -236,18 +261,59 @@ function renderDashboard() {
   $("#submissionList").innerHTML = filtered.map((item) => {
     const files = filesOf(item);
     const initials = item.full_name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
-    const fileButtons = files.map((file, index) => `<button class="download-file" type="button" data-download-id="${item.id}" data-file-index="${index}">↓ ${escapeHtml(file.name)}</button>`).join(" ");
+    const fileButtons = files.map((file, index) => {
+      const preview = previewKind(file) ? `<button class="preview-file" type="button" data-preview-id="${item.id}" data-file-index="${index}">Preview</button> ` : "";
+      return `${preview}<button class="download-file" type="button" data-download-id="${item.id}" data-file-index="${index}">↓ ${escapeHtml(file.name)}</button>`;
+    }).join(" ");
+    const archived = item.status === "archived";
+    const dropboxReady = item.dropboxFiles?.length === files.length && files.length > 0;
     return `<article class="submission-row">
       <span class="avatar">${escapeHtml(initials)}</span>
       <span class="person"><strong>${escapeHtml(item.full_name)}</strong><small>${escapeHtml(item.email)}</small><span class="submission-note">${escapeHtml(item.message || "No note")}</span></span>
-      <span class="submission-files"><strong>${files.length} file${files.length === 1 ? "" : "s"} · ${formatBytes(files.reduce((total, file) => total + Number(file.size || 0), 0))}</strong><small>${fileButtons}</small></span>
+      <span class="submission-files"><strong>${files.length} file${files.length === 1 ? "" : "s"} · ${formatBytes(files.reduce((total, file) => total + Number(file.size || 0), 0))}</strong><small>${fileButtons} <button class="archive-file" type="button" data-dropbox-id="${item.id}" ${archived || !dropboxReady ? "disabled" : ""}>${archived ? "✓ Saved to Dropbox" : dropboxReady ? "Save to Dropbox" : "Preparing Dropbox…"}</button></small></span>
       <span class="date-cell">${new Date(item.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</span>
-      <button class="status-btn ${escapeHtml(item.status)}" type="button" data-status-id="${item.id}">${escapeHtml(item.status)}</button>
+      <button class="status-btn ${escapeHtml(item.status)}" type="button" data-status-id="${item.id}" ${archived ? "disabled" : ""}>${escapeHtml(item.status)}</button>
     </article>`;
   }).join("");
 }
 
 $("#submissionList").addEventListener("click", async (event) => {
+  const dropboxButton = event.target.closest("[data-dropbox-id]");
+  if (dropboxButton) {
+    const submission = state.submissions.find((item) => item.id === dropboxButton.dataset.dropboxId);
+    if (!submission || submission.status === "archived" || !submission.dropboxFiles?.length) return;
+    if (!window.Dropbox?.save) {
+      showNotice("#adminNotice", "Dropbox Saver could not load. Confirm that upload-portal-sthp.onrender.com is listed in your Dropbox app domains.", true);
+      return;
+    }
+    clearNotice("#adminNotice");
+    window.Dropbox.save({
+      files: submission.dropboxFiles,
+      success: async () => {
+        const result = await database.from("submissions").update({ status: "archived" }).eq("id", submission.id);
+        if (result.error) {
+          showNotice("#adminNotice", "Files reached Dropbox, but DropDesk could not mark them archived.", true);
+          return;
+        }
+        submission.status = "archived";
+        submission.dropboxFiles = [];
+        toast("Files saved to Dropbox");
+        renderDashboard();
+      },
+      cancel: () => {},
+      error: (message) => showNotice("#adminNotice", `Dropbox could not save these files: ${message}`, true),
+    });
+    return;
+  }
+
+  const previewButton = event.target.closest("[data-preview-id]");
+  if (previewButton) {
+    const submission = state.submissions.find((item) => item.id === previewButton.dataset.previewId);
+    const file = submission && filesOf(submission)[Number(previewButton.dataset.fileIndex)];
+    if (file) openPreview(file);
+    return;
+  }
+
   const downloadButton = event.target.closest("[data-download-id]");
   if (downloadButton) {
     const popup = window.open("", "_blank");
@@ -269,9 +335,53 @@ $("#submissionList").addEventListener("click", async (event) => {
   const statusButton = event.target.closest("[data-status-id]");
   if (!statusButton) return;
   const submission = state.submissions.find((item) => item.id === statusButton.dataset.statusId);
+  if (submission.status === "archived") return;
   const status = submission.status === "new" ? "reviewed" : "new";
   const result = await database.from("submissions").update({ status }).eq("id", submission.id);
   if (result.error) return showNotice("#adminNotice", result.error.message, true);
   submission.status = status;
   renderDashboard();
 });
+
+async function openPreview(file) {
+  const modal = $("#previewModal");
+  const body = $("#previewBody");
+  $("#previewTitle").textContent = file.name;
+  $("#previewMeta").textContent = `${file.type || "File"} · ${formatBytes(Number(file.size || 0))}`;
+  body.replaceChildren(Object.assign(document.createElement("span"), { className: "preview-loading", textContent: "Preparing secure preview…" }));
+  modal.hidden = false;
+  document.body.style.overflow = "hidden";
+
+  const result = await database.storage.from("client-uploads").createSignedUrl(file.path, 300);
+  if (result.error) {
+    body.textContent = result.error.message;
+    return;
+  }
+
+  const url = result.data.signedUrl;
+  $("#previewDownload").href = url;
+  const kind = previewKind(file);
+  let viewer;
+  if (kind === "image") viewer = Object.assign(document.createElement("img"), { src: url, alt: file.name });
+  if (kind === "pdf") viewer = Object.assign(document.createElement("iframe"), { src: url, title: file.name });
+  if (kind === "video") { viewer = document.createElement("video"); viewer.src = url; viewer.controls = true; }
+  if (kind === "audio") { viewer = document.createElement("audio"); viewer.src = url; viewer.controls = true; }
+  if (kind === "text") {
+    viewer = document.createElement("pre");
+    try { viewer.textContent = await fetch(url).then((response) => response.text()); }
+    catch { viewer.textContent = "This text preview could not be loaded."; }
+  }
+  if (!viewer) viewer = Object.assign(document.createElement("span"), { className: "preview-loading", textContent: "This file type must be downloaded to view." });
+  body.replaceChildren(viewer);
+}
+
+function closePreview() {
+  $("#previewModal").hidden = true;
+  $("#previewBody").replaceChildren();
+  $("#previewDownload").href = "#";
+  document.body.style.overflow = "";
+}
+
+$("#previewClose").addEventListener("click", closePreview);
+$("#previewModal").addEventListener("click", (event) => { if (event.target === event.currentTarget) closePreview(); });
+document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !$("#previewModal").hidden) closePreview(); });

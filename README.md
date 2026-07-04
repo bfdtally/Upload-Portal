@@ -8,6 +8,8 @@ A private client file-delivery portal backed by Supabase.
 - Submission metadata stored in Supabase Postgres
 - Administrator login through Supabase Auth
 - Searchable submission dashboard
+- Secure in-app previews for images, PDFs, video, audio, and text files
+- Dropbox Saver archiving from the Admin dashboard
 - Private, time-limited file download links
 - New/reviewed status tracking
 - Responsive desktop and mobile design
@@ -24,3 +26,5 @@ For Render, use:
 ## Supabase
 
 The publishable key in `app.js` is intentionally safe for browser use. Access is protected by the Row Level Security policies already configured in the Supabase project. Never add the database password, secret key, or `service_role` key to this repository.
+
+Dropbox archiving uses the public Dropbox Saver App Key in `index.html`. No Dropbox secret or OAuth token is stored in this project. The Dropbox app must allow the domain `upload-portal-sthp.onrender.com`.
