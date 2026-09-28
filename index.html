@@ -29,8 +29,8 @@
         <section id="uploadView" class="upload-view">
           <div class="hero-copy">
             <span class="eyebrow"><span class="status-dot"></span> Secure file delivery</span>
-            <h1>Send it over.<br><em>Skip the inbox.</em></h1>
-            <p>Drop your files here and they’ll land exactly where they need to. No email attachments, no size-limit surprises.</p>
+            <h1>Your class.<br><em>Your drop-off desk.</em></h1>
+            <p>Choose your class or camp, add your name, and upload your work. No student account or password needed.</p>
             <div class="trust-row">
               <span><svg viewBox="0 0 18 18"><path d="M9 2 15 4v4c0 4-2.4 6.5-6 8-3.6-1.5-6-4-6-8V4zM6.3 9l1.7 1.7 3.8-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Private & secure</span>
               <span><svg viewBox="0 0 18 18"><path d="M9 2v10m0 0 3.5-3.5M9 12 5.5 8.5M3 15h12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Up to 10 files</span>
@@ -38,6 +38,8 @@
           </div>
 
           <form class="upload-card" id="uploadForm">
+            <label class="collection-field">Class, camp or group<select id="collectionSelect" required disabled><option value="">Loading classes…</option></select></label>
+            <p id="collectionHint" class="terms" role="status"></p>
             <div class="step-label"><span>1</span> YOUR DETAILS</div>
             <div class="field-grid">
               <label>Full name <input id="fullName" type="text" placeholder="Jane Smith" required /></label>
@@ -75,7 +77,7 @@
             <div class="success-icon"><svg viewBox="0 0 42 42"><path d="m11 22 7 7 14-16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
             <span class="eyebrow">DELIVERY COMPLETE</span>
             <h2>Your files are in good hands.</h2>
-            <p>Thanks, <span id="successName">there</span>. Everything arrived safely. A confirmation has been prepared for <strong id="successEmail"></strong>.</p>
+            <p>Thanks, <span id="successName">there</span>. Your files arrived in <strong id="successCollection"></strong>. Submitted with <strong id="successEmail"></strong>.</p>
             <div class="receipt" id="receipt"></div>
             <button class="secondary-button" id="sendMore" type="button">Send more files</button>
           </div>
@@ -100,15 +102,26 @@
             <div class="admin-actions"><button class="secondary-button" id="refreshAdmin" type="button">Refresh</button><button class="secondary-button" id="logoutButton" type="button">Log out</button><button class="secondary-button" id="backToPortal" type="button">View upload portal</button></div>
           </div>
           <div class="form-notice error" id="adminNotice" hidden></div>
+          <section class="collection-manager" aria-labelledby="groupsTitle">
+            <h3 id="groupsTitle">Classes, camps & groups</h3>
+            <form id="collectionForm" class="collection-form">
+              <label>Name<input id="collectionName" maxlength="120" placeholder="Name your class or camp" required /></label>
+              <label>Type<select id="collectionKind"><option>Class</option><option>Camp</option><option>Other</option></select></label>
+              <button class="secondary-button" type="submit">Create group</button>
+            </form>
+            <div id="collectionList" class="collection-list"></div>
+          </section>
           <div class="stat-grid">
-            <article><span>Total submissions</span><strong id="totalSubmissions">0</strong><small>All time</small></article>
+            <article><span>Total submissions</span><strong id="totalSubmissions">0</strong><small>Current view</small></article>
             <article><span>Files received</span><strong id="totalFiles">0</strong><small>Ready to review</small></article>
             <article><span>Storage used</span><strong id="storageUsed">0 MB</strong><small>Private cloud storage</small></article>
           </div>
           <div class="submission-panel">
             <div class="toolbar">
               <label class="search-box"><svg viewBox="0 0 20 20"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="m13 13 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><input id="searchInput" type="search" placeholder="Search by name, email or file..." /></label>
-              <select id="statusFilter" aria-label="Filter by status"><option value="all">All submissions</option><option value="new">New</option><option value="reviewed">Reviewed</option><option value="archived">Archived</option></select>
+              <select id="archiveFilter" aria-label="Inbox or archive"><option value="active">Inbox</option><option value="archived">Archive</option><option value="all">Inbox & archive</option></select>
+              <select id="collectionFilter" aria-label="Filter by class"><option value="all">All groups</option></select>
+              <select id="statusFilter" aria-label="Filter by status"><option value="all">All submissions</option><option value="new">New</option><option value="reviewed">Reviewed</option><option value="archived">Saved to Dropbox</option></select>
             </div>
             <div id="submissionList" class="submission-list"></div>
           </div>

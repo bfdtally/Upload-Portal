@@ -28,3 +28,25 @@ For Render, use:
 The publishable key in `app.js` is intentionally safe for browser use. Access is protected by the Row Level Security policies already configured in the Supabase project. Never add the database password, secret key, or `service_role` key to this repository.
 
 Dropbox archiving uses the public Dropbox Saver App Key in `index.html`. No Dropbox secret or OAuth token is stored in this project. The Dropbox app must allow the domain `upload-portal-sthp.onrender.com`.
+
+## Classes, camps and archive (September 28, 2026)
+
+Students need no login. Share a URL with `?class=ete-221-oc-fl-26` to preselect
+ETE 221 OC FL 26. Admin can create Class, Camp or Other groups, copy student
+links, filter the inbox/archive by group, move submissions, archive and restore.
+`archived_at` controls the Archive view; the legacy `status=archived` still means
+saved to Dropbox. These actions are independent and neither deletes files.
+All 39 submissions before September 28, 2026 midnight America/New_York were
+archived. Existing group assignments remain unassigned until the owner moves them.
+The original Dropbox source folder is preserved; this project is the updated copy.
+
+Database migration `dropdesk_collections_and_archive` was applied to project
+qgaanudqzldzjdmaskhu. New collections use RLS with the existing submission-admin
+identity. Public clients can read the group list and submit but cannot read files
+or submission records. Tests: `node tests/organizer.cjs`; transactional live SQL
+verified public class reads/submission inserts, denied public submission reads
+and class creation, and permitted owner class creation/submission updates.
+
+The Supabase advisor also reported pre-existing settings: leaked-password
+protection disabled, and public EXECUTE grants on the event-trigger function
+`rls_auto_enable()`. This update does not change those existing settings.

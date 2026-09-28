@@ -110,3 +110,18 @@ footer { min-height: 65px; display: flex; justify-content: space-between; align-
 [hidden] { display: none !important; }
 @media (max-width: 850px) { .upload-view { grid-template-columns: 1fr; padding: 40px 10px 60px; gap: 45px; }.hero-copy { text-align: center; margin: auto; }.hero-copy > p { margin: auto; }.trust-row { justify-content: center; } h1 { letter-spacing: -2.5px; }.submission-row { grid-template-columns: 40px 1fr auto; }.submission-files { grid-column: 2 / 4; }.date-cell { display: none; } }
 @media (max-width: 560px) { .page-shell { width: min(100% - 26px, 1180px); }.site-header { height: 72px; }.upload-view { padding-top: 25px; }.field-grid { grid-template-columns: 1fr; }.upload-card { padding: 24px 18px; }.trust-row { flex-direction: column; align-items: center; gap: 10px; }.success-card { padding: 38px 20px; }.admin-heading { align-items: start; gap: 20px; flex-direction: column; }.stat-grid { grid-template-columns: 1fr; }.toolbar { flex-direction: column; }.search-box,.toolbar select { width: 100%; max-width: none; } footer { padding: 20px 0; gap: 8px; flex-direction: column; } }
+
+/* Class and camp organization */
+.collection-field { display: grid; gap: 8px; margin-bottom: 12px; font-weight: 700; }
+.collection-field select, .collection-form input, .collection-form select, .move-label select { width: 100%; padding: 12px; border: 1px solid #d5ddd9; border-radius: 10px; background: white; color: #173c31; font: inherit; }
+.collection-manager { background: white; border: 1px solid #dce6df; border-radius: 18px; padding: 24px; margin-bottom: 24px; }
+.collection-form { display: flex; gap: 12px; align-items: end; margin: 18px 0; flex-wrap: wrap; }
+.collection-form label { display: grid; gap: 6px; flex: 1; min-width: 160px; }
+.collection-list { display: grid; gap: 10px; }
+.group-card { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: #f3f8f5; padding: 14px; border-radius: 12px; }
+.group-card small { display: block; margin-top: 5px; color: #65756c; }
+.toolbar { flex-wrap: wrap; }
+.move-label { display: grid; gap: 4px; font-size: 12px; margin-top: 10px; }
+.move-label select { padding: 6px; max-width: 230px; }
+.date-cell button { padding: 7px; margin-bottom: 8px; font-size: 11px; }
+@media(max-width:600px) { .group-card { align-items: start; flex-direction: column; } .toolbar select { width: 100%; } }

@@ -5,7 +5,10 @@ const MAX_TOTAL_SIZE = 200 * 1024 * 1024;
 
 const database = window.supabase.createClient(PROJECT_URL, PUBLISHABLE_KEY);
 const $ = (selector) => document.querySelector(selector);
-const state = { files: [], submissions: [] };
+const state = { files: [], submissions: [], collections: [] };
+const requestedCollection = new URLSearchParams(location.search).get("class");
+// Uploads always use the public role, even while the owner is signed in.
+const uploadDatabase = window.supabase.createClient(PROJECT_URL, PUBLISHABLE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: "dropdesk-upload" } });
 const views = {
   upload: $("#uploadView"),
   success: $("#successView"),
@@ -106,6 +109,8 @@ $("#message").addEventListener("input", (event) => { $("#charCount").textContent
 $("#uploadForm").addEventListener("submit", async (event) => {
   event.preventDefault();
   clearNotice("#uploadNotice");
+  const collectionId = $("#collectionSelect").value;
+  if (!state.collections.some(group => group.id === collectionId)) return showNotice("#uploadNotice", "Choose your class or camp first.", true);
   if (!state.files.length) return showNotice("#uploadNotice", "Add at least one file to continue.", true);
 
   const button = $("#submitButton");
@@ -118,7 +123,7 @@ $("#uploadForm").addEventListener("submit", async (event) => {
       const file = state.files[index];
       button.firstChild.textContent = `Uploading ${index + 1} of ${state.files.length}… `;
       const path = `submissions/${submissionId}/${createId()}-${safeName(file.name)}`;
-      const result = await database.storage.from("client-uploads").upload(path, file, {
+      const result = await uploadDatabase.storage.from("client-uploads").upload(path, file, {
         contentType: file.type || "application/octet-stream",
         upsert: false,
       });
@@ -129,22 +134,25 @@ $("#uploadForm").addEventListener("submit", async (event) => {
     button.firstChild.textContent = "Saving submission… ";
     const submission = {
       id: submissionId,
+      collection_id: collectionId,
       full_name: $("#fullName").value.trim(),
       email: $("#email").value.trim(),
       message: $("#message").value.trim(),
       files: uploadedFiles,
       status: "new",
     };
-    const result = await database.from("submissions").insert(submission);
+    const result = await uploadDatabase.from("submissions").insert(submission);
     if (result.error) throw result.error;
 
     $("#successName").textContent = submission.full_name.split(" ")[0];
     $("#successEmail").textContent = submission.email;
+    $("#successCollection").textContent = collectionName(collectionId);
     $("#receipt").innerHTML = uploadedFiles.map((file) => `
       <div class="receipt-row"><svg viewBox="0 0 18 18"><path d="M5 2h5l4 4v10H5zM10 2v4h4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg><span>${escapeHtml(file.name)}</span><small>${formatBytes(file.size)}</small></div>`).join("");
     state.files = [];
     renderFiles();
     event.target.reset();
+    $("#collectionSelect").value = collectionId;
     $("#charCount").textContent = "0";
     showView("success");
   } catch (error) {
@@ -197,15 +205,23 @@ $("#searchInput").addEventListener("input", renderDashboard);
 $("#statusFilter").addEventListener("change", renderDashboard);
 
 async function loadDashboard() {
+  await loadCollections();
   clearNotice("#adminNotice");
   $("#submissionList").innerHTML = '<div class="empty-state">Loading submissions…</div>';
-  const result = await database.from("submissions").select("*").order("created_at", { ascending: false });
+  const rows = [];
+  let result;
+  for (let offset = 0; ; offset += 500) {
+    result = await database.from("submissions").select("*").order("created_at", { ascending: false }).order("id").range(offset, offset + 499);
+    if (result.error) break;
+    rows.push(...result.data);
+    if (result.data.length < 500) break;
+  }
   if (result.error) {
     showNotice("#adminNotice", result.error.message, true);
     $("#submissionList").innerHTML = '<div class="empty-state">Unable to load submissions.</div>';
     return;
   }
-  state.submissions = result.data || [];
+  state.submissions = rows;
   await Promise.all(state.submissions.map(prepareDropboxLinks));
   renderDashboard();
 }
@@ -242,14 +258,18 @@ async function prepareDropboxLinks(submission) {
 function renderDashboard() {
   const query = $("#searchInput").value.toLowerCase().trim();
   const filter = $("#statusFilter").value;
+  const groupFilter = $("#collectionFilter").value;
+  const archiveFilter = $("#archiveFilter").value;
   const filtered = state.submissions.filter((item) => {
     const files = filesOf(item);
     const haystack = `${item.full_name} ${item.email} ${files.map((file) => file.name).join(" ")}`.toLowerCase();
-    return (!query || haystack.includes(query)) && (filter === "all" || item.status === filter);
+    return (!query || haystack.includes(query)) && (filter === "all" || item.status === filter)
+      && (groupFilter === "all" || (item.collection_id || "unassigned") === groupFilter)
+      && (archiveFilter === "all" || (archiveFilter === "archived" ? !!item.archived_at : !item.archived_at));
   });
 
-  const allFiles = state.submissions.flatMap(filesOf);
-  $("#totalSubmissions").textContent = state.submissions.length;
+  const allFiles = filtered.flatMap(filesOf);
+  $("#totalSubmissions").textContent = filtered.length;
   $("#totalFiles").textContent = allFiles.length;
   $("#storageUsed").textContent = formatBytes(allFiles.reduce((total, file) => total + Number(file.size || 0), 0));
 
@@ -269,15 +289,27 @@ function renderDashboard() {
     const dropboxReady = item.dropboxFiles?.length === files.length && files.length > 0;
     return `<article class="submission-row">
       <span class="avatar">${escapeHtml(initials)}</span>
-      <span class="person"><strong>${escapeHtml(item.full_name)}</strong><small>${escapeHtml(item.email)}</small><span class="submission-note">${escapeHtml(item.message || "No note")}</span></span>
+      <span class="person"><strong>${escapeHtml(item.full_name)}</strong><small>${escapeHtml(item.email)}</small><span class="submission-note">${escapeHtml(collectionName(item.collection_id))} · ${escapeHtml(item.message || "No note")}</span>
+      <label class="move-label">Move to<select data-move-id="${item.id}" aria-label="Move submission to group"><option value="">Unassigned</option>${state.collections.map(group => `<option value="${group.id}" ${group.id === item.collection_id ? "selected" : ""}>${escapeHtml(group.name)}</option>`).join("")}</select></label></span>
       <span class="submission-files"><strong>${files.length} file${files.length === 1 ? "" : "s"} · ${formatBytes(files.reduce((total, file) => total + Number(file.size || 0), 0))}</strong><small>${fileButtons} <button class="archive-file" type="button" data-dropbox-id="${item.id}" ${archived || !dropboxReady ? "disabled" : ""}>${archived ? "✓ Saved to Dropbox" : dropboxReady ? "Save to Dropbox" : "Preparing Dropbox…"}</button></small></span>
-      <span class="date-cell">${new Date(item.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</span>
+      <span class="date-cell"><button class="secondary-button" type="button" data-archive-id="${item.id}">${item.archived_at ? "Restore to inbox" : "Archive"}</button><br>${new Date(item.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</span>
       <button class="status-btn ${escapeHtml(item.status)}" type="button" data-status-id="${item.id}" ${archived ? "disabled" : ""}>${escapeHtml(item.status)}</button>
     </article>`;
   }).join("");
 }
 
 $("#submissionList").addEventListener("click", async (event) => {
+  const archiveButton = event.target.closest("[data-archive-id]");
+  if (archiveButton) {
+    const item = state.submissions.find(row => row.id === archiveButton.dataset.archiveId);
+    const archived_at = item.archived_at ? null : new Date().toISOString();
+    archiveButton.disabled = true;
+    const result = await database.from("submissions").update({ archived_at }).eq("id", item.id).select("id");
+    if (result.error || !result.data?.length) { archiveButton.disabled = false; return showNotice("#adminNotice", result.error?.message || "Could not update this submission. Sign in again.", true); }
+    item.archived_at = archived_at;
+    renderDashboard();
+    return;
+  }
   const dropboxButton = event.target.closest("[data-dropbox-id]");
   if (dropboxButton) {
     const submission = state.submissions.find((item) => item.id === dropboxButton.dataset.dropboxId);
@@ -385,3 +417,71 @@ function closePreview() {
 $("#previewClose").addEventListener("click", closePreview);
 $("#previewModal").addEventListener("click", (event) => { if (event.target === event.currentTarget) closePreview(); });
 document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !$("#previewModal").hidden) closePreview(); });
+
+function collectionName(id) {
+  return state.collections.find(group => group.id === id)?.name || "Unassigned";
+}
+
+async function loadCollections() {
+  const result = await database.from("collections").select("id,name,kind,slug").order("name");
+  if (result.error) {
+    showNotice("#uploadNotice", "Classes could not load. Refresh to try again.", true);
+    return;
+  }
+  state.collections = result.data || [];
+  const selected = $("#collectionSelect").value;
+  const filter = $("#collectionFilter").value;
+  const options = state.collections.map(group => `<option value="${group.id}">${escapeHtml(group.name)}</option>`).join("");
+  $("#collectionSelect").innerHTML = '<option value="">Choose your class or camp</option>' + options;
+  $("#collectionSelect").disabled = false;
+  const linked = state.collections.find(group => group.slug === requestedCollection);
+  $("#collectionSelect").value = linked?.id || selected;
+  $("#collectionHint").textContent = requestedCollection && !linked ? "This class link was not found. Please choose your class or ask your instructor." : linked ? `You’re uploading to ${linked.name}.` : "Choose the group your instructor shared with you.";
+  $("#collectionFilter").innerHTML = '<option value="all">All groups</option><option value="unassigned">Unassigned</option>' + options;
+  $("#collectionFilter").value = filter || "all";
+  $("#collectionList").innerHTML = state.collections.map(group => `<div class="group-card"><span><strong>${escapeHtml(group.name)}</strong><small>${escapeHtml(group.kind)}</small></span><button class="secondary-button" type="button" data-copy-group="${group.id}">Copy student link</button></div>`).join("");
+}
+$("#collectionSelect").addEventListener("change", () => {
+  $("#collectionHint").textContent = $("#collectionSelect").value ? `You’re uploading to ${collectionName($("#collectionSelect").value)}.` : "Choose your class or camp.";
+});
+$("#collectionForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  const name = $("#collectionName").value.trim();
+  if (!name) return;
+  const button = event.target.querySelector("button");
+  button.disabled = true;
+  const base = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "group";
+  const slug = `${base}-${createId().slice(0, 8)}`;
+  const result = await database.from("collections").insert({ name, kind: $("#collectionKind").value, slug }).select("id");
+  button.disabled = false;
+  if (result.error || !result.data?.length) return showNotice("#adminNotice", result.error?.message || "Could not create group.", true);
+  event.target.reset();
+  await loadCollections();
+  renderDashboard();
+  toast("Group created. Copy its student link to share.");
+});
+$("#collectionList").addEventListener("click", async event => {
+  const button = event.target.closest("[data-copy-group]");
+  if (!button) return;
+  const group = state.collections.find(item => item.id === button.dataset.copyGroup);
+  const url = new URL(location.href);
+  url.search = ""; url.hash = "";
+  url.searchParams.set("class", group.slug);
+  try { await navigator.clipboard.writeText(url.href); toast("Student link copied"); }
+  catch { showNotice("#adminNotice", `Student link: ${url.href}`); }
+});
+$("#submissionList").addEventListener("change", async event => {
+  const select = event.target.closest("[data-move-id]");
+  if (!select) return;
+  const item = state.submissions.find(row => row.id === select.dataset.moveId);
+  const collection_id = select.value || null;
+  select.disabled = true;
+  const result = await database.from("submissions").update({ collection_id }).eq("id", item.id).select("id");
+  select.disabled = false;
+  if (result.error || !result.data?.length) { select.value = item.collection_id || ""; return showNotice("#adminNotice", result.error?.message || "Could not move submission.", true); }
+  item.collection_id = collection_id;
+  renderDashboard();
+});
+$("#collectionFilter").addEventListener("change", renderDashboard);
+$("#archiveFilter").addEventListener("change", renderDashboard);
+loadCollections();
